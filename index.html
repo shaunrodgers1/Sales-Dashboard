@@ -882,16 +882,27 @@ async function handleCallback() {
   const code     = new URLSearchParams(location.search).get('code');
   const verifier = sessionStorage.getItem('pkce_verifier');
   sessionStorage.removeItem('pkce_verifier');
-  if (!code || !verifier) return false;
-  const res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI,
-      code, code_verifier: verifier,
-    }),
-  });
-  if (!res.ok) return false;
+  if (!code)     { console.error('[Auth] handleCallback: no code in URL'); return false; }
+  if (!verifier) { console.error('[Auth] handleCallback: no PKCE verifier in sessionStorage'); return false; }
+  let res;
+  try {
+    res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI,
+        code, code_verifier: verifier,
+      }),
+    });
+  } catch (networkErr) {
+    console.error('[Auth] Token exchange network error (CORS?):', networkErr);
+    return false;
+  }
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '(unreadable)');
+    console.error('[Auth] Token exchange failed:', res.status, errText);
+    return false;
+  }
   const data = await res.json();
   tokenData = {
     access_token:  data.access_token,
@@ -900,23 +911,38 @@ async function handleCallback() {
   };
   sessionStorage.setItem('sf_token', JSON.stringify(tokenData));
   history.replaceState({}, '', location.pathname);
+  console.log('[Auth] Token exchange successful. instance_url:', tokenData.instance_url);
   return true;
 }
 
 async function refreshPagesToken() {
-  if (!tokenData?.refresh_token) { tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED'); }
-  const res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token', client_id: CLIENT_ID, refresh_token: tokenData.refresh_token,
-    }),
-  });
-  if (!res.ok) { tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED'); }
+  if (!tokenData?.refresh_token) {
+    console.error('[Auth] refreshPagesToken: no refresh token available');
+    tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED');
+  }
+  let res;
+  try {
+    res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token', client_id: CLIENT_ID, refresh_token: tokenData.refresh_token,
+      }),
+    });
+  } catch (networkErr) {
+    console.error('[Auth] Token refresh network error (CORS?):', networkErr);
+    tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED');
+  }
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '(unreadable)');
+    console.error('[Auth] Token refresh failed:', res.status, errText);
+    tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED');
+  }
   const data = await res.json();
   tokenData.access_token = data.access_token;
   if (data.refresh_token) tokenData.refresh_token = data.refresh_token;
   sessionStorage.setItem('sf_token', JSON.stringify(tokenData));
+  console.log('[Auth] Token refreshed successfully');
 }
 
 // Direct Salesforce fetch (GitHub Pages — CORS enabled)
