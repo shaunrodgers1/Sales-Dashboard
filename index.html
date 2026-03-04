@@ -30,6 +30,9 @@
     .flt-btn { background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:5px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s; }
     .flt-btn:hover { border-color:#3b82f6;color:#e2e8f0; }
     .flt-active { background:#1d4ed8 !important;border-color:#3b82f6 !important;color:#fff !important; }
+    .wr-btn { background:#0f172a;border:1px solid #334155;color:#64748b;padding:2px 5px;border-radius:4px;font-size:10px;font-weight:500;cursor:pointer;transition:all .12s;white-space:nowrap; }
+    .wr-btn:hover { border-color:#3b82f6;color:#e2e8f0; }
+    .wr-btn.wr-on { background:#1d4ed8;border-color:#3b82f6;color:#fff; }
   </style>
 </head>
 <body>
@@ -40,10 +43,10 @@
     <div style="font-size:36px;margin-bottom:12px">📊</div>
     <h1 class="text-2xl font-bold text-white mb-2">2026 Sales Dashboard</h1>
     <p class="text-sm mb-8" style="color:#94a3b8">Connect your Salesforce account to view live team data.</p>
-    <a href="javascript:void(0)" onclick="startAuth()"
-       style="display:inline-block;background:#2563eb;color:#fff;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:15px;cursor:pointer;">
+    <button onclick="login()"
+       style="background:#2563eb;color:#fff;font-weight:600;padding:12px 32px;border-radius:8px;border:none;font-size:15px;cursor:pointer;">
       Connect to Salesforce
-    </a>
+    </button>
     <div id="loginError" class="hidden mt-4 text-sm" style="color:#f87171"></div>
   </div>
 </div>
@@ -66,7 +69,7 @@
         style="background:#2563eb;color:#fff;border:none;padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">
         Refresh
       </button>
-      <a href="javascript:void(0)" onclick="logout()" style="color:#64748b;font-size:13px;text-decoration:none;cursor:pointer;">Disconnect</a>
+      <a href="#" onclick="logout();return false;" style="color:#64748b;font-size:13px;text-decoration:none;">Disconnect</a>
     </div>
   </div>
 
@@ -128,11 +131,7 @@
           <div class="pbar-bg" style="margin-top:8px;"><div id="kpiLogosBar" class="pbar-fill" style="background:#10b981;width:0%"></div></div>
         </div>
 
-        <div class="card">
-          <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Win Rate</div>
-          <div id="kpiWinRate" class="text-white font-bold" style="font-size:26px;"></div>
-          <div id="kpiWinRateSub" style="font-size:12px;color:#94a3b8;margin-top:4px;"></div>
-        </div>
+        <div class="card" id="wrCard"></div>
 
         <div class="card">
           <div id="kpiMeetingsLabel" style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Meetings Held YTD</div>
@@ -225,6 +224,24 @@
         </div>
       </div>
 
+      <!-- ── Meetings Breakdown ── -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#475569;margin:20px 0 10px;">— Meetings Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Status</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="chartMtgStatus"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Source</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="chartMtgSource"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Product</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="chartMtgProduct"></canvas></div>
+        </div>
+      </div>
+
+
     </div><!-- /teamContent -->
   </div><!-- /teamTab -->
 
@@ -272,7 +289,7 @@
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="sanKpiDealArrLabel">YTD Deal ARR</div><div id="sanKpiDealArr" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiDealArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="sanKpiDealArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="sanKpiDealArrBar" class="pbar-fill" style="background:#3b82f6;width:0%"></div></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="sanKpiGrossArrLabel">YTD Gross ARR</div><div id="sanKpiGrossArr" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiGrossArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="sanKpiGrossArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="sanKpiGrossArrBar" class="pbar-fill" style="background:#a78bfa;width:0%"></div></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="sanKpiLogosLabel">YTD Logos</div><div id="sanKpiLogos" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiLogosSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
-        <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Win Rate</div><div id="sanKpiWinRate" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiWinRateSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
+        <div class="card" id="sanWrCard"></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Meetings Held</div><div id="sanKpiMeetings" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiMeetingsSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Deal ARR</div><div id="sanKpiAvgDeal" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiAvgDealSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Velocity</div><div id="sanKpiAvgDays" class="text-white font-bold" style="font-size:22px;"></div><div id="sanKpiAvgDaysSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
@@ -306,6 +323,24 @@
         </div>
         <div class="chart-wrap"><canvas id="sanChartPipeline"></canvas></div>
       </div>
+
+      <!-- ── Sanders Meetings Breakdown ── -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#475569;margin:20px 0 10px;">— Meetings Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Status</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="sanChartMtgStatus"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Source</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="sanChartMtgSource"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Product</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="sanChartMtgProduct"></canvas></div>
+        </div>
+      </div>
+
     </div>
   </div><!-- /sandersTab -->
 
@@ -319,7 +354,7 @@
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="eisKpiDealArrLabel">YTD Deal ARR</div><div id="eisKpiDealArr" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiDealArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="eisKpiDealArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="eisKpiDealArrBar" class="pbar-fill" style="background:#3b82f6;width:0%"></div></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="eisKpiGrossArrLabel">YTD Gross ARR</div><div id="eisKpiGrossArr" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiGrossArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="eisKpiGrossArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="eisKpiGrossArrBar" class="pbar-fill" style="background:#a78bfa;width:0%"></div></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="eisKpiLogosLabel">YTD Logos</div><div id="eisKpiLogos" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiLogosSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
-        <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Win Rate</div><div id="eisKpiWinRate" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiWinRateSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
+        <div class="card" id="eisWrCard"></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Meetings Held</div><div id="eisKpiMeetings" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiMeetingsSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Deal ARR</div><div id="eisKpiAvgDeal" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiAvgDealSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
         <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Velocity</div><div id="eisKpiAvgDays" class="text-white font-bold" style="font-size:22px;"></div><div id="eisKpiAvgDaysSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
@@ -353,6 +388,24 @@
         </div>
         <div class="chart-wrap"><canvas id="eisChartPipeline"></canvas></div>
       </div>
+
+      <!-- ── Eisenberger Meetings Breakdown ── -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#475569;margin:20px 0 10px;">— Meetings Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Status</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="eisChartMtgStatus"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Source</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="eisChartMtgSource"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">By Product</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="eisChartMtgProduct"></canvas></div>
+        </div>
+      </div>
+
     </div>
   </div><!-- /eisenbergerTab -->
 
@@ -373,7 +426,7 @@
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="rdKpiDealArrLabel">YTD Deal ARR</div><div id="rdKpiDealArr" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiDealArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="rdKpiDealArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="rdKpiDealArrBar" class="pbar-fill" style="background:#3b82f6;width:0%"></div></div></div>
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="rdKpiGrossArrLabel">YTD Gross ARR</div><div id="rdKpiGrossArr" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiGrossArrPct" style="font-size:16px;font-weight:700;margin-top:2px;"></div><div id="rdKpiGrossArrSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div><div class="pbar-bg" style="margin-top:8px;"><div id="rdKpiGrossArrBar" class="pbar-fill" style="background:#a78bfa;width:0%"></div></div></div>
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;" id="rdKpiLogosLabel">YTD Logos</div><div id="rdKpiLogos" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiLogosSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
-      <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Win Rate</div><div id="rdKpiWinRate" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiWinRateSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
+      <div class="card" id="rdWrCard"></div>
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Meetings Held</div><div id="rdKpiMeetings" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiMeetingsSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Deal ARR</div><div id="rdKpiAvgDeal" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiAvgDealSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
       <div class="card"><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Avg Velocity</div><div id="rdKpiAvgDays" class="text-white font-bold" style="font-size:22px;"></div><div id="rdKpiAvgDaysSub" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
@@ -435,6 +488,24 @@
 
   </div><!-- /pipeDetailView -->
 
+  <!-- ──────────── WIN RATE DETAIL VIEW ──────────── -->
+  <div id="wrDetailView" class="hidden" style="padding:24px;">
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <button onclick="hideWrDetail()"
+        style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:7px 14px;border-radius:7px;font-size:13px;cursor:pointer;">
+        ← Back
+      </button>
+      <div>
+        <div id="wdTitle" class="text-white font-bold" style="font-size:18px;">Win Rate Detail</div>
+        <div id="wdCrumb" style="font-size:12px;color:#64748b;margin-top:2px;"></div>
+      </div>
+    </div>
+
+    <div id="wdCharts"></div>
+
+  </div><!-- /wrDetailView -->
+
 </div><!-- /dashboard -->
 
 <script>
@@ -450,9 +521,6 @@ const TODAY_STR         = `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).p
 const CUR_MONTH_START   = `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}-01`;
 
 // ── Salesforce OAuth ─────────────────────────────────────────────────────────
-const SF_INSTANCE  = 'https://singleops.my.salesforce.com';
-const CLIENT_ID    = '3MVG9uudbyLbNPZNR69VPH9y.WjT8l9iry4LqzhrUnpQ2MUDJwIV44MolxlGJ4V3SjvpgXv_JhA==';
-const REDIRECT_URI = 'https://shaunrodgers1.github.io/Sales-Dashboard/';
 
 const TEAM_ARR_GOALS  = [1045481,984458,1301853,925776,699182,682458,861862,870482,959606,1388405,1601439,1395755];
 const TEAM_LOGO_GOALS = [149,138,183,123,91,87,105,106,118,171,198,171];
@@ -698,6 +766,7 @@ function showPipeDetail(scope, title, fromTab) {
   // Hide all tabs, detail views, and period filter bar
   ['team','sanders','eisenberger','rep'].forEach(t => el(t + 'Tab').classList.add('hidden'));
   el('repDetailView').classList.add('hidden');
+  el('wrDetailView').classList.add('hidden');
   el('filterBar').style.display = 'none';
   el('pipeDetailView').classList.remove('hidden');
   window.scrollTo(0, 0);
@@ -764,6 +833,7 @@ function buildSOQL(from, to) {
     curMonthWon: `SELECT COUNT(Id) cnt FROM Task WHERE Meeting_Status__c IN ('Held-Qualified','Held-Nurture','Held-Marketing Handback','Unqualified-Held') AND Opportunity__r.StageName = 'Closed Won' AND ActivityDate >= ${CUR_MONTH_START} AND ActivityDate <= ${TODAY_STR} AND ${REP_ID_FILTER}`,
     velocity:    `SELECT OwnerId, AVG(Sales_Cycle__c) avgDays, AVG(Deal_ARR__c) avgDealARR, AVG(Gross_ARR__c) avgGrossARR FROM Opportunity WHERE ${RT_FILTER} AND StageName = 'Closed Won' AND CloseDate >= ${from} AND CloseDate <= ${to} AND Sales_Cycle__c > 0 GROUP BY OwnerId`,
     sources:     `SELECT Source__c, SUM(Deal_ARR__c) dealArr, SUM(Gross_ARR__c) grossArr, COUNT(Id) logos FROM Opportunity WHERE ${RT_FILTER} AND StageName = 'Closed Won' AND CloseDate >= ${from} AND CloseDate <= ${to} GROUP BY Source__c`,
+    mtgsDim:     `SELECT OwnerId, Meeting_Type__c, Product_Interest__c, Opportunity__r.StageName FROM Task WHERE Meeting_Status__c IN ('Held-Qualified','Held-Nurture','Held-Marketing Handback','Unqualified-Held') AND ActivityDate >= ${from} AND ActivityDate <= ${to} AND ${REP_ID_FILTER}`,
   };
 }
 
@@ -775,21 +845,112 @@ const MTG_STATUSES = new Set(['Held-Qualified','Held-Nurture','Held-Marketing Ha
 // Name → OwnerId lookup (report returns rep name, not ID)
 const NAME_TO_ID = Object.fromEntries(REPS.map(r => [r.name, r.id]));
 
-// ── Salesforce token helpers ──────────────────────────────────────────────────
-function getToken()       { return sessionStorage.getItem('sf_access_token'); }
-function getInstanceUrl() { return sessionStorage.getItem('sf_instance_url') || SF_INSTANCE; }
+// ── Environment detection ─────────────────────────────────────────────────────
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// Authenticated fetch directly to Salesforce with timeout
-async function sfFetch(path, params = {}, ms = 45000) {
+// ── Salesforce OAuth constants (used for client-side / GitHub Pages auth) ──────
+const SF_INSTANCE  = 'https://singleops.my.salesforce.com';
+const CLIENT_ID    = '3MVG9uudbyLbNPZNR69VPH9y.WjT8l9iry4LqzhrUnpQ2MUDJwIV44MolxlGJ4V3SjvpgXv_JhA==';
+const REDIRECT_URI = 'https://shaunrodgers1.github.io/Sales-Dashboard/';
+
+let tokenData = null; // { access_token, refresh_token, instance_url }  — Pages only
+
+// ── PKCE helpers (browser-native crypto) ──────────────────────────────────────
+function makeVerifier() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+async function makeChallenge(verifier) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+// ── Client-side OAuth (GitHub Pages) ─────────────────────────────────────────
+async function startAuth() {
+  const verifier  = makeVerifier();
+  const challenge = await makeChallenge(verifier);
+  sessionStorage.setItem('pkce_verifier', verifier);
+  const params = new URLSearchParams({
+    response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI,
+    code_challenge: challenge, code_challenge_method: 'S256', scope: 'api refresh_token',
+  });
+  location.href = `${SF_INSTANCE}/services/oauth2/authorize?${params}`;
+}
+
+async function handleCallback() {
+  const code     = new URLSearchParams(location.search).get('code');
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  sessionStorage.removeItem('pkce_verifier');
+  if (!code || !verifier) return false;
+  const res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI,
+      code, code_verifier: verifier,
+    }),
+  });
+  if (!res.ok) return false;
+  const data = await res.json();
+  tokenData = {
+    access_token:  data.access_token,
+    refresh_token: data.refresh_token || null,
+    instance_url:  data.instance_url  || SF_INSTANCE,
+  };
+  sessionStorage.setItem('sf_token', JSON.stringify(tokenData));
+  history.replaceState({}, '', location.pathname);
+  return true;
+}
+
+async function refreshPagesToken() {
+  if (!tokenData?.refresh_token) { tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED'); }
+  const res = await fetch(`${SF_INSTANCE}/services/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token', client_id: CLIENT_ID, refresh_token: tokenData.refresh_token,
+    }),
+  });
+  if (!res.ok) { tokenData = null; sessionStorage.removeItem('sf_token'); throw new Error('SESSION_EXPIRED'); }
+  const data = await res.json();
+  tokenData.access_token = data.access_token;
+  if (data.refresh_token) tokenData.refresh_token = data.refresh_token;
+  sessionStorage.setItem('sf_token', JSON.stringify(tokenData));
+}
+
+// Direct Salesforce fetch (GitHub Pages — CORS enabled)
+async function sfFetch(url, params = {}) {
+  const u = new URL(url);
+  Object.entries(params).forEach(([k,v]) => u.searchParams.set(k, v));
+  let res = await fetch(u.toString(), { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+  if (res.status === 401) {
+    await refreshPagesToken();
+    res = await fetch(u.toString(), { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+  }
+  return res;
+}
+
+// ── Login / logout (works in both environments) ───────────────────────────────
+function login() {
+  if (IS_LOCAL) { location.href = '/auth'; } else { startAuth(); }
+}
+function logout() {
+  if (IS_LOCAL) {
+    location.href = '/api/logout';
+  } else {
+    tokenData = null;
+    sessionStorage.removeItem('sf_token');
+    location.reload();
+  }
+}
+
+// ── Local proxy fetch with timeout ────────────────────────────────────────────
+async function fetchWithTimeout(url, ms = 45000) {
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  const qs    = new URLSearchParams(params).toString();
-  const url   = getInstanceUrl() + path + (qs ? '?' + qs : '');
   try {
-    return await fetch(url, {
-      headers: { Authorization: 'Bearer ' + getToken() },
-      signal:  ctrl.signal,
-    });
+    return await fetch(url, { signal: ctrl.signal });
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('Request timed out — Salesforce took too long to respond');
     throw e;
@@ -799,7 +960,9 @@ async function sfFetch(path, params = {}, ms = 45000) {
 }
 
 async function fetchMeetingsReport(from, to) {
-  const res = await sfFetch('/services/data/v60.0/analytics/reports/' + MEETINGS_REPORT_ID, { includeDetails: true });
+  const res = IS_LOCAL
+    ? await fetchWithTimeout('/api/report/' + MEETINGS_REPORT_ID)
+    : await sfFetch(`${tokenData.instance_url}/services/data/v60.0/analytics/reports/${MEETINGS_REPORT_ID}`, { includeDetails: true });
   if (res.status === 401) throw new Error('SESSION_EXPIRED');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -839,7 +1002,9 @@ async function fetchMeetingsReport(from, to) {
 }
 
 async function fetchPipelineReport() {
-  const res = await sfFetch('/services/data/v60.0/analytics/reports/' + PIPELINE_REPORT_ID, { includeDetails: true });
+  const res = IS_LOCAL
+    ? await fetchWithTimeout('/api/report/' + PIPELINE_REPORT_ID)
+    : await sfFetch(`${tokenData.instance_url}/services/data/v60.0/analytics/reports/${PIPELINE_REPORT_ID}`, { includeDetails: true });
   if (res.status === 401) throw new Error('SESSION_EXPIRED');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -907,7 +1072,9 @@ async function fetchPipelineReport() {
 }
 
 async function sfQuery(q) {
-  const res = await sfFetch('/services/data/v60.0/query', { q });
+  const res = IS_LOCAL
+    ? await fetchWithTimeout('/api/query?' + new URLSearchParams({ q }))
+    : await sfFetch(`${tokenData.instance_url}/services/data/v60.0/query`, { q });
   if (res.status === 401) throw new Error('SESSION_EXPIRED');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -916,6 +1083,32 @@ async function sfQuery(q) {
   }
   const data = await res.json();
   return data.records || [];
+}
+
+// Handles Salesforce query pagination automatically (returns all records)
+async function sfQueryAll(q) {
+  const records = [];
+  let sfUrl  = IS_LOCAL ? '/api/query' : `${tokenData.instance_url}/services/data/v60.0/query`;
+  let params = { q };
+  for (;;) {
+    const res = IS_LOCAL
+      ? await fetchWithTimeout(sfUrl + '?' + new URLSearchParams(params))
+      : await sfFetch(sfUrl, params);
+    if (res.status === 401) throw new Error('SESSION_EXPIRED');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err) ? err[0]?.message : (err.error || 'Query failed');
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    records.push(...(data.records || []));
+    if (data.done) break;
+    sfUrl  = IS_LOCAL
+      ? '/api/query-more?' + new URLSearchParams({ url: data.nextRecordsUrl })
+      : tokenData.instance_url + data.nextRecordsUrl;
+    params = {};
+  }
+  return records;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1244,6 +1437,479 @@ function makeHBar(id, labels, data, fmt, onClickFn) {
   });
 }
 
+function makeSimpleBar(id, labels, data, colors, yFmt, onClickFn) {
+  destroyChart(id);
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  CHARTS[id] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderRadius: 4,
+        datalabels: {
+          display: true, anchor: 'end', align: 'top',
+          color: '#cbd5e1', font: { size: 11, weight: '600' }, padding: { bottom: 0 },
+          formatter: v => v > 0 ? yFmt(v) : null,
+        },
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      clip: false,
+      layout: { padding: { top: 28 } },
+      onClick: onClickFn ? (evt, elements) => {
+        if (elements.length) onClickFn(labels[elements[0].index], elements[0].index);
+      } : undefined,
+      onHover: onClickFn ? (evt, elements) => {
+        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      } : undefined,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => yFmt(c.raw) } },
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#64748b', callback: yFmt, font: { size: 11 } }, grid: { color: '#334155' } },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  WIN RATE WIDGET
+// ═══════════════════════════════════════════════════
+
+const WR_WIDGETS = {}; // scope → { dimRecs, repIds, product, source }
+
+function computeWR(allDim, repIds, product, source) {
+  let total = 0, won = 0;
+  for (const r of allDim) {
+    if (repIds && !repIds.has(r.OwnerId)) continue;
+    if (source  && r.Meeting_Type__c !== source) continue;
+    if (product && !(r.Product_Interest__c || '').split(';').map(p => p.trim()).includes(product)) continue;
+    total++;
+    if (r.Opportunity__r?.StageName === 'Closed Won') won++;
+  }
+  return { total, won, wr: total > 0 ? won / total : 0 };
+}
+
+function refreshWinRate(scope) {
+  const w = WR_WIDGETS[scope];
+  if (!w) return;
+  const { dimRecs, repIds, product, source } = w;
+  const { total, won, wr } = computeWR(dimRecs, repIds, product, source);
+  const parts = [];
+  if (product) parts.push(product);
+  if (source)  parts.push(source);
+  parts.push(getDateRange().label);
+  const rateEl  = el('wrRate_'  + scope);
+  const subEl   = el('wrSub_'   + scope);
+  const crumbEl = el('wrCrumb_' + scope);
+  if (rateEl)  rateEl.textContent  = fmtPct(wr);
+  if (subEl)   subEl.textContent   = `${won} wins / ${total} meetings`;
+  if (crumbEl) crumbEl.textContent = parts.join(' · ');
+  // Sync active button states
+  const cardId = scope ? scope + 'WrCard' : 'wrCard';
+  const card = el(cardId);
+  if (!card) return;
+  card.querySelectorAll('.wr-btn[data-wrtype="product"]').forEach(b => {
+    b.className = 'wr-btn' + (b.dataset.wrval === product ? ' wr-on' : '');
+  });
+  card.querySelectorAll('.wr-btn[data-wrtype="source"]').forEach(b => {
+    b.className = 'wr-btn' + (b.dataset.wrval === source ? ' wr-on' : '');
+  });
+}
+
+function wrSetFilter(scope, type, val) {
+  const w = WR_WIDGETS[scope];
+  if (!w) return;
+  w[type] = val;
+  refreshWinRate(scope);
+}
+
+let wrDetailFromScope = '';
+let wrDetailTeam      = ''; // '' | 'Sanders' | 'Eisenberger'
+let wrDetailSource    = ''; // '' | 'Inbound' | 'Outbound' | 'Event'
+let wrDrillStack      = []; // [{ type: 'product'|'team'|'rep', value, label }]
+
+function showWrDetail(scope) {
+  wrDetailFromScope = scope;
+  wrDetailTeam      = '';
+  wrDetailSource    = '';
+  wrDrillStack      = [];
+  ['team','sanders','eisenberger','rep'].forEach(t => el(t + 'Tab').classList.add('hidden'));
+  el('repDetailView').classList.add('hidden');
+  el('pipeDetailView').classList.add('hidden');
+  el('wrDetailView').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  renderWrDetailView(scope);
+}
+
+function setWrDetailTeam(team) {
+  wrDetailTeam = team;
+  wrDrillStack = [];
+  renderWrDetailView(wrDetailFromScope);
+}
+
+function setWrDetailSource(src) {
+  wrDetailSource = src;
+  wrDrillStack = [];
+  renderWrDetailView(wrDetailFromScope);
+}
+
+function wrDrillDown(entry) {
+  wrDrillStack.push(entry);
+  renderWrDetailView(wrDetailFromScope);
+}
+
+function wrDrillTo(n) {
+  wrDrillStack = wrDrillStack.slice(0, n);
+  renderWrDetailView(wrDetailFromScope);
+}
+
+function hideWrDetail() {
+  el('wrDetailView').classList.add('hidden');
+  if (wrDetailFromScope === 'rd') {
+    el('repDetailView').classList.remove('hidden');
+  } else {
+    const tabMap = { '': 'team', 'san': 'sanders', 'eis': 'eisenberger' };
+    switchTab(tabMap[wrDetailFromScope] || 'team');
+  }
+}
+
+function renderWrDetailView(scope) {
+  const w = WR_WIDGETS[scope];
+  if (!w) return;
+  const { dimRecs, repIds } = w;
+
+  const scopeLabels = { '': 'Team', 'san': 'Team Sanders', 'eis': 'Team Eisenberger', 'rd': 'Rep' };
+  el('wdTitle').textContent = (scopeLabels[scope] || 'Rep') + ' — Win Rate Detail';
+
+  const parts = [];
+  if (wrDetailTeam)   parts.push(wrDetailTeam);
+  if (wrDetailSource) parts.push(wrDetailSource);
+  parts.push(getDateRange().label);
+  el('wdCrumb').textContent = parts.join(' · ');
+
+  // ── Apply top-level filters ──
+  let effectiveRepIds = repIds;
+  if (wrDetailTeam) {
+    const teamIds = new Set(REPS.filter(r => r.team === wrDetailTeam).map(r => r.id));
+    effectiveRepIds = repIds ? new Set([...repIds].filter(id => teamIds.has(id))) : teamIds;
+  }
+  const dimByRep = effectiveRepIds ? dimRecs.filter(r => effectiveRepIds.has(r.OwnerId)) : dimRecs;
+  const dim      = wrDetailSource ? dimByRep.filter(r => r.Meeting_Type__c === wrDetailSource) : dimByRep;
+
+  // ── Apply drill stack ──
+  let drillDim    = dim;
+  let drillRepIds = effectiveRepIds;
+  for (const level of wrDrillStack) {
+    if (level.type === 'product') {
+      drillDim = drillDim.filter(r =>
+        (r.Product_Interest__c || '').split(';').map(p => p.trim()).includes(level.value));
+    } else if (level.type === 'team') {
+      const tIds = new Set(REPS.filter(r => r.team === level.value).map(r => r.id));
+      drillRepIds = drillRepIds ? new Set([...drillRepIds].filter(id => tIds.has(id))) : tIds;
+      drillDim    = drillDim.filter(r => tIds.has(r.OwnerId));
+    } else if (level.type === 'rep') {
+      drillRepIds = new Set([level.value]);
+      drillDim    = drillDim.filter(r => r.OwnerId === level.value);
+    }
+  }
+
+  // ── KPI ──
+  const totalWon  = drillDim.filter(r => r.Opportunity__r?.StageName === 'Closed Won').length;
+  const totalMtgs = drillDim.length;
+  const totalWR   = totalMtgs > 0 ? totalWon / totalMtgs : 0;
+  const wrColor   = totalWR >= 0.30 ? '#34d399' : totalWR >= 0.20 ? '#fbbf24' : '#f87171';
+
+  // ── Drill level helpers ──
+  const drillLevel   = wrDrillStack.length;
+  const lastDrill    = drillLevel > 0 ? wrDrillStack[drillLevel - 1] : null;
+  const atRepLevel   = lastDrill?.type === 'rep';
+  const isTeam       = scope === '';
+  const isRep        = scope === 'rd';
+  const hasByTeam    = isTeam && !wrDetailTeam && drillLevel === 0;
+  const showRepTable = !isRep && drillLevel === 0;
+
+  const showTeamFilter = !atRepLevel && (scope === '' || scope === 'san' || scope === 'eis');
+  const TEAMS   = ['', 'Sanders', 'Eisenberger'];
+  const SOURCES = ['', 'Inbound', 'Outbound', 'Event'];
+
+  // ── Breadcrumb ──
+  const bcParts = [
+    drillLevel === 0
+      ? `<span style="color:#e2e8f0;font-weight:600;">All</span>`
+      : `<span onclick="wrDrillTo(0)" style="cursor:pointer;color:#3b82f6;">All</span>`,
+    ...wrDrillStack.map((item, i) =>
+      i === drillLevel - 1
+        ? `<span style="color:#e2e8f0;font-weight:600;">${item.label}</span>`
+        : `<span onclick="wrDrillTo(${i + 1})" style="cursor:pointer;color:#3b82f6;">${item.label}</span>`
+    ),
+  ];
+  const breadcrumbHtml = bcParts.join('<span style="color:#64748b;margin:0 6px;">→</span>');
+
+  // ── Chart containers by drill level ──
+  let chartsHtml;
+  if (atRepLevel) {
+    chartsHtml = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">Win Rate by Product</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="wdChartWRProduct"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:14px;">Win Rate by Source</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="wdChartWRSource"></canvas></div>
+        </div>
+      </div>`;
+  } else if (drillLevel > 0) {
+    chartsHtml = `
+      <div class="card" style="margin-bottom:14px;">
+        <div class="text-white font-semibold" style="font-size:13px;margin-bottom:4px;">Win Rate by Rep — ${lastDrill.label}</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Click a bar to drill into a rep</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="wdChartWRRep"></canvas></div>
+      </div>`;
+  } else {
+    const cols = hasByTeam ? '1fr 1fr' : '1fr';
+    chartsHtml = `
+      <div style="display:grid;grid-template-columns:${cols};gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:4px;">Win Rate by Product${wrDetailSource ? ' — ' + wrDetailSource : ''}</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Click a bar to drill down</div>
+          <div class="chart-wrap" style="height:200px;"><canvas id="wdChartWRProduct"></canvas></div>
+        </div>
+        ${hasByTeam ? `
+        <div class="card">
+          <div class="text-white font-semibold" style="font-size:13px;margin-bottom:4px;">Win Rate by Team${wrDetailSource ? ' — ' + wrDetailSource : ''}</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Click a bar to drill down</div>
+          <div class="chart-wrap" style="height:200px;"><canvas id="wdChartWRTeam"></canvas></div>
+        </div>` : ''}
+      </div>
+      ${showRepTable ? `
+      <div class="card" style="margin-bottom:14px;">
+        <div class="text-white font-semibold" style="font-size:13px;margin-bottom:4px;">Win Rate by Rep${wrDetailSource ? ' — ' + wrDetailSource : ''}</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;">Click a row to drill into a rep</div>
+        <div id="wdWrRepTable"></div>
+      </div>` : ''}`;
+  }
+
+  // ── Set innerHTML ──
+  el('wdCharts').innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">
+      ${showTeamFilter ? `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;">Team:</span>
+        <div style="display:flex;gap:4px;">
+          ${TEAMS.map(t => `<button class="flt-btn${wrDetailTeam===t?' flt-active':''}" onclick="setWrDetailTeam('${t}')">${t||'All'}</button>`).join('')}
+        </div>
+      </div>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;">Source:</span>
+        <div style="display:flex;gap:4px;">
+          ${SOURCES.map(s => `<button class="flt-btn${wrDetailSource===s?' flt-active':''}" onclick="setWrDetailSource('${s}')">${s||'All'}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;flex-wrap:wrap;">
+      ${drillLevel > 0 ? `<button onclick="wrDrillTo(${drillLevel - 1})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;margin-right:4px;">← Back</button>` : ''}
+      ${breadcrumbHtml}
+    </div>
+    <div class="card" style="margin-bottom:14px;display:inline-flex;flex-direction:column;min-width:200px;">
+      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Overall Win Rate</div>
+      <div style="font-size:48px;font-weight:700;color:${wrColor};line-height:1;">${fmtPct(totalWR)}</div>
+      <div style="font-size:13px;color:#94a3b8;margin-top:6px;">${totalWon} wins / ${totalMtgs} meetings</div>
+    </div>
+    ${chartsHtml}`;
+
+  // ── Render charts ──
+  const PROD_KEYS   = ['SingleOps','LMN','Greenius'];
+  const PROD_COLORS = { SingleOps:'#3b82f6', LMN:'#10b981', Greenius:'#a78bfa' };
+  const SRC_ORDER   = ['Inbound','Outbound','Event'];
+  const SRC_COLORS  = { Inbound:'#3b82f6', Outbound:'#10b981', Event:'#f59e0b', Other:'#64748b' };
+
+  if (atRepLevel) {
+    // WR by Product — leaf, not clickable
+    const prodMap = Object.fromEntries(PROD_KEYS.map(k => [k, { total: 0, won: 0 }]));
+    for (const r of drillDim) {
+      if (!r.Product_Interest__c) continue;
+      const isWon = r.Opportunity__r?.StageName === 'Closed Won';
+      r.Product_Interest__c.split(';').forEach(p => {
+        p = p.trim();
+        if (prodMap[p]) { prodMap[p].total++; if (isWon) prodMap[p].won++; }
+      });
+    }
+    const activeProd = PROD_KEYS.filter(k => prodMap[k].total > 0);
+    makeSimpleBar('wdChartWRProduct', activeProd,
+      activeProd.map(k => prodMap[k].total > 0 ? +(prodMap[k].won / prodMap[k].total * 100).toFixed(1) : 0),
+      activeProd.map(k => PROD_COLORS[k]), v => v + '%');
+
+    // WR by Source — leaf, not clickable
+    const srcMap = {};
+    for (const r of drillDim) {
+      const src = r.Meeting_Type__c || 'Other';
+      if (!srcMap[src]) srcMap[src] = { total: 0, won: 0 };
+      srcMap[src].total++;
+      if (r.Opportunity__r?.StageName === 'Closed Won') srcMap[src].won++;
+    }
+    const srcKeys = [
+      ...SRC_ORDER.filter(s => srcMap[s]),
+      ...Object.keys(srcMap).filter(s => !SRC_ORDER.includes(s) && srcMap[s]),
+    ];
+    makeSimpleBar('wdChartWRSource', srcKeys,
+      srcKeys.map(s => srcMap[s].total > 0 ? +(srcMap[s].won / srcMap[s].total * 100).toFixed(1) : 0),
+      srcKeys.map(s => SRC_COLORS[s] || '#64748b'), v => v + '%');
+
+  } else if (drillLevel > 0) {
+    // Level 1: WR by Rep bar chart — clickable
+    const repStats = {};
+    for (const r of drillDim) {
+      if (!repStats[r.OwnerId]) repStats[r.OwnerId] = { total: 0, won: 0 };
+      repStats[r.OwnerId].total++;
+      if (r.Opportunity__r?.StageName === 'Closed Won') repStats[r.OwnerId].won++;
+    }
+    const repRows = REPS
+      .filter(r => repStats[r.id])
+      .map(r => ({ ...r, wr: repStats[r.id].total > 0 ? repStats[r.id].won / repStats[r.id].total : 0 }))
+      .sort((a, b) => b.wr - a.wr);
+    makeSimpleBar('wdChartWRRep',
+      repRows.map(r => r.name),
+      repRows.map(r => +(r.wr * 100).toFixed(1)),
+      repRows.map(r => pctColor(r.wr)),
+      v => v + '%',
+      (label, idx) => wrDrillDown({ type: 'rep', value: repRows[idx].id, label: repRows[idx].name })
+    );
+
+  } else {
+    // Level 0: product + team charts clickable; rep table rows clickable
+    const prodMap = Object.fromEntries(PROD_KEYS.map(k => [k, { total: 0, won: 0 }]));
+    for (const r of drillDim) {
+      if (!r.Product_Interest__c) continue;
+      const isWon = r.Opportunity__r?.StageName === 'Closed Won';
+      r.Product_Interest__c.split(';').forEach(p => {
+        p = p.trim();
+        if (prodMap[p]) { prodMap[p].total++; if (isWon) prodMap[p].won++; }
+      });
+    }
+    const activeProd = PROD_KEYS.filter(k => prodMap[k].total > 0);
+    makeSimpleBar('wdChartWRProduct', activeProd,
+      activeProd.map(k => prodMap[k].total > 0 ? +(prodMap[k].won / prodMap[k].total * 100).toFixed(1) : 0),
+      activeProd.map(k => PROD_COLORS[k]), v => v + '%',
+      (label) => wrDrillDown({ type: 'product', value: label, label })
+    );
+
+    if (hasByTeam) {
+      const sanIds = new Set(REPS.filter(r => r.team === 'Sanders').map(r => r.id));
+      const eisIds = new Set(REPS.filter(r => r.team === 'Eisenberger').map(r => r.id));
+      const sanDim = drillDim.filter(r => sanIds.has(r.OwnerId));
+      const eisDim = drillDim.filter(r => eisIds.has(r.OwnerId));
+      const sanWon = sanDim.filter(r => r.Opportunity__r?.StageName === 'Closed Won').length;
+      const eisWon = eisDim.filter(r => r.Opportunity__r?.StageName === 'Closed Won').length;
+      const sanWR  = sanDim.length > 0 ? +(sanWon / sanDim.length * 100).toFixed(1) : 0;
+      const eisWR  = eisDim.length > 0 ? +(eisWon / eisDim.length * 100).toFixed(1) : 0;
+      makeSimpleBar('wdChartWRTeam', ['Team Sanders','Team Eisenberger'], [sanWR, eisWR],
+        ['#06b6d4','#f59e0b'], v => v + '%',
+        (label) => wrDrillDown({
+          type: 'team',
+          value: label === 'Team Sanders' ? 'Sanders' : 'Eisenberger',
+          label,
+        })
+      );
+    }
+
+    if (showRepTable) {
+      const repStats = {};
+      for (const r of drillDim) {
+        if (!repStats[r.OwnerId]) repStats[r.OwnerId] = { total: 0, won: 0 };
+        repStats[r.OwnerId].total++;
+        if (r.Opportunity__r?.StageName === 'Closed Won') repStats[r.OwnerId].won++;
+      }
+      const repRows = REPS
+        .filter(r => (!drillRepIds || drillRepIds.has(r.id)) && repStats[r.id])
+        .map(r => ({
+          ...r,
+          total: repStats[r.id].total,
+          won:   repStats[r.id].won,
+          wr:    repStats[r.id].total > 0 ? repStats[r.id].won / repStats[r.id].total : 0,
+        }))
+        .sort((a, b) => b.wr - a.wr);
+      const tableEl = el('wdWrRepTable');
+      if (tableEl) {
+        tableEl.innerHTML = `
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="border-bottom:1px solid #334155;">
+              <th style="text-align:left;padding:8px 12px;color:#64748b;">Rep</th>
+              <th style="text-align:left;padding:8px 12px;color:#64748b;">Team</th>
+              <th style="text-align:right;padding:8px 12px;color:#64748b;">Meetings Held</th>
+              <th style="text-align:right;padding:8px 12px;color:#64748b;">Won</th>
+              <th style="text-align:right;padding:8px 12px;color:#64748b;">Win Rate</th>
+              <th style="padding:8px 12px;min-width:120px;color:#64748b;"></th>
+            </tr></thead>
+            <tbody>
+              ${repRows.map(r => `
+                <tr data-repid="${r.id}" style="border-bottom:1px solid #1e293b;cursor:pointer;">
+                  <td style="padding:8px 12px;font-weight:600;color:#e2e8f0;">${r.name}</td>
+                  <td style="padding:8px 12px;font-size:12px;color:#94a3b8;">${r.team}</td>
+                  <td style="padding:8px 12px;text-align:right;font-family:monospace;color:#94a3b8;">${r.total}</td>
+                  <td style="padding:8px 12px;text-align:right;font-family:monospace;color:#34d399;">${r.won}</td>
+                  <td style="padding:8px 12px;text-align:right;font-family:monospace;font-weight:700;color:${pctTextColor(r.wr)};">${fmtPct(r.wr)}</td>
+                  <td style="padding:8px 12px;"><div class="pbar-bg"><div class="pbar-fill" style="width:${Math.min(r.wr*100,100)}%;background:${pctColor(r.wr)};"></div></div></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`;
+        tableEl.querySelectorAll('tr[data-repid]').forEach(tr => {
+          const row = repRows.find(r => r.id === tr.dataset.repid);
+          if (!row) return;
+          tr.onmouseenter = () => tr.style.background = '#243044';
+          tr.onmouseleave = () => tr.style.background = '';
+          tr.onclick = () => wrDrillDown({ type: 'rep', value: row.id, label: row.name });
+        });
+      }
+    }
+  }
+}
+
+function buildWinRateWidget(scope, dimRecs, repIds) {
+  const cardId = scope ? scope + 'WrCard' : 'wrCard';
+  const card = el(cardId);
+  if (!card) return;
+  const prev    = WR_WIDGETS[scope] || {};
+  const product = prev.product ?? '';
+  const source  = prev.source  ?? '';
+  WR_WIDGETS[scope] = { dimRecs, repIds, product, source };
+  const numSize = scope === '' ? '26px' : '22px';
+  const lblSize = scope === '' ? '11px' : '10px';
+  const PRODS   = ['', 'LMN', 'SingleOps', 'Greenius'];
+  const SRCS    = ['', 'Inbound', 'Outbound', 'Event'];
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
+      <span style="font-size:${lblSize};color:#64748b;text-transform:uppercase;letter-spacing:.07em;flex-shrink:0;">Win Rate</span>
+      <span id="wrCrumb_${scope}" style="font-size:10px;color:#475569;text-align:right;line-height:1.4;"></span>
+    </div>
+    <div style="margin-bottom:6px;">
+      <div style="font-size:9px;color:#64748b;margin-bottom:3px;">Product</div>
+      <div style="display:flex;gap:2px;">
+        ${PRODS.map(v => `<button class="wr-btn${v===product?' wr-on':''}" data-wrtype="product" data-wrval="${v}" onclick="wrSetFilter('${scope}','product','${v}')">${v||'All'}</button>`).join('')}
+      </div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9px;color:#64748b;margin-bottom:3px;">Source</div>
+      <div style="display:flex;gap:2px;">
+        ${SRCS.map(v => `<button class="wr-btn${v===source?' wr-on':''}" data-wrtype="source" data-wrval="${v}" onclick="wrSetFilter('${scope}','source','${v}')">${v||'All'}</button>`).join('')}
+      </div>
+    </div>
+    <div id="wrRate_${scope}" style="font-size:${numSize};font-weight:700;color:#e2e8f0;"></div>
+    <div id="wrSub_${scope}" style="font-size:11px;color:#94a3b8;margin-top:2px;"></div>
+    <div style="margin-top:8px;">
+      <button class="wr-btn" onclick="showWrDetail('${scope}')" style="font-size:10px;padding:3px 8px;">View detail →</button>
+    </div>`;
+  refreshWinRate(scope);
+}
+
 // ═══════════════════════════════════════════════════
 //  TAB SWITCHING
 // ═══════════════════════════════════════════════════
@@ -1259,7 +1925,7 @@ function switchTab(tab) {
 //  RENDER: TEAM TAB
 // ═══════════════════════════════════════════════════
 
-function renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCount, curMonthWonCount, dateRange) {
+function renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCount, curMonthWonCount, dateRange, mtgsDimRecs) {
   const { fromMo, toMo } = dateRange;
 
   // ── Aggregate monthly totals ──
@@ -1290,10 +1956,6 @@ function renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCou
     if (r.Meeting_Status__c === 'Unqualified-Held')        meetUQ += c;
   }
   const totalMeetings = meetQ + meetN + meetMH + meetUQ;
-
-  // ── Win Rate: meetings linked to Closed Won opp / total meetings held ──
-  const totalWon = wonMtgRecs.reduce((s, r) => s + (r.cnt || 0), 0);
-  const winRate  = totalMeetings > 0 ? totalWon / totalMeetings : 0;
 
   // ── Period goals ──
   const ytdArrGoal  = TEAM_ARR_GOALS.slice(fromMo, toMo + 1).reduce((a, b) => a + b, 0);
@@ -1327,9 +1989,6 @@ function renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCou
   el('kpiLogosSub').textContent  = `Goal ${ytdLogoGoal}`;
   el('kpiLogosBar').style.width  = Math.min(logoPct * 100, 100) + '%';
   el('kpiLogosBar').style.background = pctColor(logoPct);
-
-  el('kpiWinRate').textContent    = fmtPct(winRate);
-  el('kpiWinRateSub').textContent = `${totalWon} linked wins / ${totalMeetings} meetings`;
 
   el('kpiMeetings').textContent    = totalMeetings.toLocaleString();
   el('kpiMeetingsSub').textContent = `${meetQ} Qual · ${meetN} Nurture · ${meetMH} Mktg HB · ${meetUQ} Unqualified`;
@@ -1461,6 +2120,12 @@ function renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCou
   setPct('chartMonthlyARRPct',   ytdArrGoal  > 0 ? totalDealARR / ytdArrGoal  : 0);
   setPct('chartMonthlyLogosPct', ytdLogoGoal > 0 ? totalLogos   / ytdLogoGoal : 0);
   // Pipeline charts rendered by renderPipelineCharts() called from loadData()
+
+  // ── Meetings breakdown + win rate detail ──
+  if (mtgsDimRecs) {
+    buildWinRateWidget('', mtgsDimRecs, null);
+    renderMeetingsBreakdown('', mtgsDimRecs, meetingRecs, null);
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1656,11 +2321,6 @@ function showRepDetail(repId, fromTab) {
   }
   const totalMeetings = meetQ + meetN + meetMH + meetUQ;
 
-  // ── Win rate ──
-  const wonMtgRec  = wonMtgRecs.find(r => r.OwnerId === repId);
-  const wonCount   = wonMtgRec?.cnt || 0;
-  const winRate    = totalMeetings > 0 ? wonCount / totalMeetings : 0;
-
   // ── Velocity ──
   const vel        = velocityRecs.find(r => r.OwnerId === repId);
   const avgDays    = vel?.avgDays    || 0;
@@ -1694,8 +2354,7 @@ function showRepDetail(repId, fromTab) {
   el('rdKpiLogos').textContent          = totalLogos.toLocaleString();
   el('rdKpiLogosSub').textContent       = `${rdLabel} logos`;
 
-  el('rdKpiWinRate').textContent        = fmtPct(winRate);
-  el('rdKpiWinRateSub').textContent     = `${wonCount} wins / ${totalMeetings} meetings`;
+  if (LAST_DATA.mtgsDimRecs) buildWinRateWidget('rd', LAST_DATA.mtgsDimRecs, new Set([repId]));
 
   el('rdKpiMeetings').textContent       = totalMeetings.toLocaleString();
   el('rdKpiMeetingsSub').textContent    = `${meetQ} Q · ${meetN} N · ${meetMH} MH · ${meetUQ} UQ`;
@@ -1750,7 +2409,7 @@ function hideRepDetail() {
 //  RENDER: TEAM VIEW (generic — Sanders / Eisenberger)
 // ═══════════════════════════════════════════════════
 
-function renderTeamView(prefix, teamReps, wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange) {
+function renderTeamView(prefix, teamReps, wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange, mtgsDimRecs) {
   const { fromMo, toMo } = dateRange;
   const repIds = new Set(teamReps.map(r => r.id));
 
@@ -1786,10 +2445,6 @@ function renderTeamView(prefix, teamReps, wonRecs, meetingRecs, wonMtgRecs, velo
     if (r.Meeting_Status__c === 'Unqualified-Held')        meetUQ += c;
   }
   const totalMeetings = meetQ + meetN + meetMH + meetUQ;
-
-  // ── Win rate ──
-  const totalWon = tWonMtg.reduce((s, r) => s + (r.cnt || 0), 0);
-  const winRate  = totalMeetings > 0 ? totalWon / totalMeetings : 0;
 
   // ── Goals: sum of rep tier goals ──
   const teamArrGoals = Array(12).fill(0);
@@ -1831,9 +2486,6 @@ function renderTeamView(prefix, teamReps, wonRecs, meetingRecs, wonMtgRecs, velo
 
   el(p+'KpiLogos').textContent         = totalLogos.toLocaleString();
   el(p+'KpiLogosSub').textContent      = `${tvLabel} logos`;
-
-  el(p+'KpiWinRate').textContent       = fmtPct(winRate);
-  el(p+'KpiWinRateSub').textContent    = `${totalWon} wins / ${totalMeetings} meetings`;
 
   el(p+'KpiMeetings').textContent      = totalMeetings.toLocaleString();
   el(p+'KpiMeetingsSub').textContent   = `${meetQ} Q · ${meetN} N · ${meetMH} MH · ${meetUQ} UQ`;
@@ -1927,6 +2579,135 @@ function renderTeamView(prefix, teamReps, wonRecs, meetingRecs, wonMtgRecs, velo
     `;
     tbody.appendChild(tr);
   }
+
+  // ── Meetings breakdown + win rate detail ──
+  if (mtgsDimRecs) {
+    buildWinRateWidget(prefix, mtgsDimRecs, repIds);
+    renderMeetingsBreakdown(prefix, mtgsDimRecs, meetingRecs, repIds);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER: MEETINGS BREAKDOWN + WIN RATE DETAIL
+// ═══════════════════════════════════════════════════
+
+// pfx: '' = Team tab, 'san' = Sanders, 'eis' = Eisenberger
+// repIds: Set of OwnerId strings to scope to (null = all reps)
+function renderMeetingsBreakdown(pfx, mtgsDimRecs, meetingRecs, repIds) {
+  const p   = pfx ? pfx + 'C' : 'c'; // builds 'sanC...' / 'eisC...' / 'c...' for canvas IDs
+  const tid = pfx ? pfx + 'WrRepTable' : 'wrRepTable';
+
+  const dim = repIds ? mtgsDimRecs.filter(r => repIds.has(r.OwnerId)) : mtgsDimRecs;
+  const mtg = repIds ? meetingRecs.filter(r => repIds.has(r.OwnerId)) : meetingRecs;
+
+  // ── By Status (from aggregated meetingRecs) ──
+  const statMap = {};
+  for (const r of mtg) {
+    statMap[r.Meeting_Status__c] = (statMap[r.Meeting_Status__c] || 0) + (r.cnt || 0);
+  }
+  const STATUS_KEYS   = ['Held-Qualified','Held-Nurture','Held-Marketing Handback','Unqualified-Held'];
+  const STATUS_LABELS = ['Qualified','Nurtured','Mktg HB','Unqualified'];
+  const STATUS_COLORS = ['#10b981','#3b82f6','#a78bfa','#f59e0b'];
+  makeSimpleBar(p + 'hartMtgStatus', STATUS_LABELS,
+    STATUS_KEYS.map(k => statMap[k] || 0), STATUS_COLORS, v => String(v));
+
+  // ── By Source + Win Rate by Source ──
+  const srcMap = {};
+  for (const r of dim) {
+    const src = r.Meeting_Type__c || 'Other';
+    if (!srcMap[src]) srcMap[src] = { total: 0, won: 0 };
+    srcMap[src].total++;
+    if (r.Opportunity__r?.StageName === 'Closed Won') srcMap[src].won++;
+  }
+  const SRC_ORDER  = ['Inbound','Outbound','Event'];
+  const SRC_COLORS = { Inbound:'#3b82f6', Outbound:'#10b981', Event:'#f59e0b', Other:'#64748b' };
+  const srcKeys = [
+    ...SRC_ORDER.filter(s => srcMap[s]),
+    ...Object.keys(srcMap).filter(s => !SRC_ORDER.includes(s) && srcMap[s]),
+  ];
+  makeSimpleBar(p + 'hartMtgSource', srcKeys,
+    srcKeys.map(s => srcMap[s].total),
+    srcKeys.map(s => SRC_COLORS[s] || '#64748b'), v => String(v));
+  makeSimpleBar(p + 'hartWRSource', srcKeys,
+    srcKeys.map(s => srcMap[s].total > 0 ? +(srcMap[s].won / srcMap[s].total * 100).toFixed(1) : 0),
+    srcKeys.map(s => SRC_COLORS[s] || '#64748b'), v => v + '%');
+
+  // ── By Product + Win Rate by Product (multipicklist: split on ';') ──
+  const PROD_KEYS   = ['SingleOps','LMN','Greenius'];
+  const PROD_COLORS = { SingleOps:'#3b82f6', LMN:'#10b981', Greenius:'#a78bfa' };
+  const prodMap = Object.fromEntries(PROD_KEYS.map(k => [k, { total: 0, won: 0 }]));
+  for (const r of dim) {
+    if (!r.Product_Interest__c) continue;
+    const isWon = r.Opportunity__r?.StageName === 'Closed Won';
+    r.Product_Interest__c.split(';').forEach(prod => {
+      prod = prod.trim();
+      if (prodMap[prod]) { prodMap[prod].total++; if (isWon) prodMap[prod].won++; }
+    });
+  }
+  const activeProd = PROD_KEYS.filter(k => prodMap[k].total > 0);
+  makeSimpleBar(p + 'hartMtgProduct', activeProd,
+    activeProd.map(k => prodMap[k].total),
+    activeProd.map(k => PROD_COLORS[k]), v => String(v));
+  makeSimpleBar(p + 'hartWRProduct', activeProd,
+    activeProd.map(k => prodMap[k].total > 0 ? +(prodMap[k].won / prodMap[k].total * 100).toFixed(1) : 0),
+    activeProd.map(k => PROD_COLORS[k]), v => v + '%');
+
+  // ── Win Rate by Team (Team tab only) ──
+  if (!pfx) {
+    const sanIds = new Set(REPS.filter(r => r.team === 'Sanders').map(r => r.id));
+    const eisIds = new Set(REPS.filter(r => r.team === 'Eisenberger').map(r => r.id));
+    const sanDim = dim.filter(r => sanIds.has(r.OwnerId));
+    const eisDim = dim.filter(r => eisIds.has(r.OwnerId));
+    const sanWon = sanDim.filter(r => r.Opportunity__r?.StageName === 'Closed Won').length;
+    const eisWon = eisDim.filter(r => r.Opportunity__r?.StageName === 'Closed Won').length;
+    const sanWR  = sanDim.length > 0 ? +(sanWon / sanDim.length * 100).toFixed(1) : 0;
+    const eisWR  = eisDim.length > 0 ? +(eisWon / eisDim.length * 100).toFixed(1) : 0;
+    makeSimpleBar('chartWRTeam', ['Team Sanders','Team Eisenberger'], [sanWR, eisWR],
+      ['#06b6d4','#f59e0b'], v => v + '%');
+  }
+
+  // ── Win Rate by Rep table ──
+  const repStats = {};
+  for (const r of dim) {
+    if (!repStats[r.OwnerId]) repStats[r.OwnerId] = { total: 0, won: 0 };
+    repStats[r.OwnerId].total++;
+    if (r.Opportunity__r?.StageName === 'Closed Won') repStats[r.OwnerId].won++;
+  }
+  const repRows = REPS
+    .filter(r => (!repIds || repIds.has(r.id)) && repStats[r.id])
+    .map(r => ({
+      ...r,
+      total: repStats[r.id].total,
+      won:   repStats[r.id].won,
+      wr:    repStats[r.id].total > 0 ? repStats[r.id].won / repStats[r.id].total : 0,
+    }))
+    .sort((a, b) => b.wr - a.wr);
+
+  const tableEl = el(tid);
+  if (!tableEl) return;
+  tableEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="border-bottom:1px solid #334155;">
+        <th style="text-align:left;padding:8px 12px;color:#64748b;">Rep</th>
+        <th style="text-align:left;padding:8px 12px;color:#64748b;">Team</th>
+        <th style="text-align:right;padding:8px 12px;color:#64748b;">Meetings Held</th>
+        <th style="text-align:right;padding:8px 12px;color:#64748b;">Won</th>
+        <th style="text-align:right;padding:8px 12px;color:#64748b;">Win Rate</th>
+        <th style="padding:8px 12px;min-width:120px;color:#64748b;"></th>
+      </tr></thead>
+      <tbody>
+        ${repRows.map(r => `
+          <tr style="border-bottom:1px solid #1e293b;">
+            <td style="padding:8px 12px;font-weight:600;color:#e2e8f0;">${r.name}</td>
+            <td style="padding:8px 12px;font-size:12px;color:#94a3b8;">${r.team}</td>
+            <td style="padding:8px 12px;text-align:right;font-family:monospace;color:#94a3b8;">${r.total}</td>
+            <td style="padding:8px 12px;text-align:right;font-family:monospace;color:#34d399;">${r.won}</td>
+            <td style="padding:8px 12px;text-align:right;font-family:monospace;font-weight:700;color:${pctTextColor(r.wr)};">${fmtPct(r.wr)}</td>
+            <td style="padding:8px 12px;"><div class="pbar-bg"><div class="pbar-fill" style="width:${Math.min(r.wr*100,100)}%;background:${pctColor(r.wr)};"></div></div></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1958,7 +2739,7 @@ async function loadData() {
   el('headerPeriodLabel').textContent = dateRange.label;
 
   try {
-    const [wonRecs, meetingRecs, pipelineRecs, velocityRecs, sourceRecs, wonMtgRecs, curMtgRecs, curWonRecs] = await Promise.all([
+    const [wonRecs, meetingRecs, pipelineRecs, velocityRecs, sourceRecs, wonMtgRecs, curMtgRecs, curWonRecs, mtgsDimRecs] = await Promise.all([
       sfQuery(SOQL.won),
       fetchMeetingsReport(dateRange.from, dateRange.to),
       fetchPipelineReport(),
@@ -1967,17 +2748,18 @@ async function loadData() {
       sfQuery(SOQL.wonMtg),
       sfQuery(SOQL.curMonthMtg),
       sfQuery(SOQL.curMonthWon),
+      sfQueryAll(SOQL.mtgsDim),
     ]);
 
     const curMonthMtgCount = curMtgRecs[0]?.cnt || 0;
     const curMonthWonCount = curWonRecs[0]?.cnt || 0;
 
-    LAST_DATA = { wonRecs, meetingRecs, wonMtgRecs, velocityRecs, pipelineRecs, dateRange };
+    LAST_DATA = { wonRecs, meetingRecs, wonMtgRecs, velocityRecs, pipelineRecs, dateRange, mtgsDimRecs };
 
-    renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCount, curMonthWonCount, dateRange);
+    renderTeam(wonRecs, meetingRecs, sourceRecs, wonMtgRecs, curMonthMtgCount, curMonthWonCount, dateRange, mtgsDimRecs);
     renderReps(wonRecs, meetingRecs, velocityRecs, wonMtgRecs, dateRange);
-    renderTeamView('san', REPS.filter(r => r.team === 'Sanders'),     wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange);
-    renderTeamView('eis', REPS.filter(r => r.team === 'Eisenberger'), wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange);
+    renderTeamView('san', REPS.filter(r => r.team === 'Sanders'),     wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange, mtgsDimRecs);
+    renderTeamView('eis', REPS.filter(r => r.team === 'Eisenberger'), wonRecs, meetingRecs, wonMtgRecs, velocityRecs, dateRange, mtgsDimRecs);
     renderPipelineCharts(pipelineRecs);
 
     el('lastUpdated').textContent = new Date().toLocaleTimeString();
@@ -1987,7 +2769,7 @@ async function loadData() {
     setLoading(false);
     if (err.message === 'SESSION_EXPIRED') {
       showToast('Session expired — please log in again.');
-      el('teamLoading').innerHTML = 'Session expired. <a href="javascript:void(0)" onclick="startAuth()" style="color:#3b82f6;text-decoration:underline;cursor:pointer">Log in again</a>.';
+      el('teamLoading').innerHTML = 'Session expired. <a href="#" onclick="login();return false;" style="color:#3b82f6;text-decoration:underline;">Log in again</a>.';
     } else {
       showToast('Error loading data: ' + err.message);
       el('teamLoading').textContent = 'Error loading data — click Refresh to retry.';
@@ -2001,62 +2783,6 @@ async function loadData() {
 //  OAUTH (PKCE — fully client-side, no server needed)
 // ═══════════════════════════════════════════════════
 
-function makeVerifier() {
-  const arr = new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-async function makeChallenge(verifier) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-function startAuth() {
-  const verifier = makeVerifier();
-  sessionStorage.setItem('sf_pkce_v', verifier);
-  makeChallenge(verifier).then(challenge => {
-    const p = new URLSearchParams({
-      response_type:         'code',
-      client_id:             CLIENT_ID,
-      redirect_uri:          REDIRECT_URI,
-      code_challenge:        challenge,
-      code_challenge_method: 'S256',
-      scope:                 'api',
-    });
-    window.location.href = SF_INSTANCE + '/services/oauth2/authorize?' + p;
-  });
-}
-
-async function handleCallback(code) {
-  const verifier = sessionStorage.getItem('sf_pkce_v');
-  sessionStorage.removeItem('sf_pkce_v');
-  const res = await fetch(SF_INSTANCE + '/services/oauth2/token', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    new URLSearchParams({
-      grant_type:    'authorization_code',
-      client_id:     CLIENT_ID,
-      redirect_uri:  REDIRECT_URI,
-      code,
-      code_verifier: verifier,
-    }),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.error_description || e.error || 'Token exchange failed');
-  }
-  const d = await res.json();
-  sessionStorage.setItem('sf_access_token', d.access_token);
-  sessionStorage.setItem('sf_instance_url', d.instance_url || SF_INSTANCE);
-  history.replaceState({}, '', REDIRECT_URI);
-}
-
-function logout() {
-  sessionStorage.removeItem('sf_access_token');
-  sessionStorage.removeItem('sf_instance_url');
-  window.location.reload();
-}
 
 // ═══════════════════════════════════════════════════
 //  INIT
@@ -2067,33 +2793,51 @@ function el(id) { return document.getElementById(id); }
 async function init() {
   const params = new URLSearchParams(location.search);
 
-  // Handle OAuth callback from Salesforce
-  if (params.has('code')) {
-    try {
-      await handleCallback(params.get('code'));
-    } catch (err) {
-      el('loginError').textContent = 'Authentication failed: ' + err.message;
+  if (IS_LOCAL) {
+    if (params.has('error')) {
+      el('loginError').textContent = 'Authentication failed (' + params.get('error') + '). Please try again.';
       el('loginError').classList.remove('hidden');
-      el('loginScreen').classList.remove('hidden');
-      return;
     }
-    el('dashboard').classList.remove('hidden');
-    buildFilterBar();
-    loadData();
-    return;
-  }
-
-  if (params.has('error')) {
-    el('loginError').textContent = 'Authentication failed (' + params.get('error') + '). Please try again.';
-    el('loginError').classList.remove('hidden');
-  }
-
-  if (getToken()) {
-    el('dashboard').classList.remove('hidden');
-    buildFilterBar();
-    loadData();
+    const res = await fetch('/api/status');
+    const { authenticated } = await res.json();
+    if (authenticated) {
+      el('dashboard').classList.remove('hidden');
+      buildFilterBar();
+      loadData();
+    } else {
+      el('loginScreen').classList.remove('hidden');
+    }
   } else {
-    el('loginScreen').classList.remove('hidden');
+    // GitHub Pages: handle OAuth callback or restore session
+    if (params.has('error')) {
+      el('loginError').textContent = 'Authentication failed (' + params.get('error') + '). Please try again.';
+      el('loginError').classList.remove('hidden');
+      history.replaceState({}, '', location.pathname);
+      el('loginScreen').classList.remove('hidden');
+    } else if (params.has('code')) {
+      const ok = await handleCallback();
+      if (ok) {
+        el('dashboard').classList.remove('hidden');
+        buildFilterBar();
+        loadData();
+      } else {
+        el('loginError').textContent = 'Authentication failed. Please try again.';
+        el('loginError').classList.remove('hidden');
+        el('loginScreen').classList.remove('hidden');
+      }
+    } else {
+      const stored = sessionStorage.getItem('sf_token');
+      if (stored) {
+        try { tokenData = JSON.parse(stored); } catch { tokenData = null; }
+      }
+      if (tokenData) {
+        el('dashboard').classList.remove('hidden');
+        buildFilterBar();
+        loadData();
+      } else {
+        el('loginScreen').classList.remove('hidden');
+      }
+    }
   }
 }
 
